@@ -4,7 +4,7 @@ reserved_words = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
                   'EXTENDS', 'FALSE', 'FOR', 'IF', 'INT',
                   'NEW', 'NULL', 'PRIVATE', 'PUBLIC', 'RETURN', 'STATIC',
                   'SUPER', 'THIS', 'TRUE', 'VOID', 'WHILE']
-#rsv = list(map(lambda x:x.replace('-','_'),reserved_words))
+reserved_words = list(map(str.lower,reserved_words))
 
 tokens = tuple([
     'COMMENT',
@@ -18,7 +18,7 @@ tokens = tuple([
     'DIVIDE',
     'LPAREN',
     'RPAREN',
-] + reserved_words)
+])
 
 t_PLUS = r'\+'
 t_MINUS = r'-'
@@ -42,12 +42,14 @@ def t_INT_CONST(t):
 
 def t_STRING_CONST(t):
     r'"[^"]*"'
-    t.value = str(t.value[1:-1])
+    #t.value = str(t.value[1:-1])
+    t.value = str(t.value)
     return t
 
 def t_ID(t):
     r'[a-zA-Z][a-zA-Z_\d]*'
-    return t
+    if str(t.value) not in reserved_words:
+        return t
 
 def t_newline(t):
     r'\n+'
@@ -67,6 +69,7 @@ data = '''
   + -20 *2
   "HELLO\n GOODBYE"
   //G = E
+  for
 '''
 
 # Give the lexer some input
