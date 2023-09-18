@@ -1,3 +1,6 @@
+# Nicholas Ciotoli 113325368 nciotoli
+# Adam Lipson 114339915 alipson
+
 import ply.lex as lex
 
 reserved_words = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
@@ -18,6 +21,7 @@ tokens = tuple([
     'DIVIDE',
     'LPAREN',
     'RPAREN',
+    'COLON_COLON_EQUAL',
 ])
 
 t_PLUS = r'\+'
@@ -26,9 +30,11 @@ t_TIMES = r'\*'
 t_DIVIDE = r'/'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
+t_COLON_COLON_EQUAL = r'::='
 
 def t_COMMENT(t):
     r'(\/\*(.|\n)+\*\/)|(\/\/.*)'
+    pass
 
 def t_FLOAT_CONST(t):
     r'(\d+.\d+([eE][+-]?\d+)?)|(\d+[eE][+-]?\d+)'
@@ -47,7 +53,7 @@ def t_STRING_CONST(t):
     return t
 
 def t_ID(t):
-    r'[a-zA-Z][a-zA-Z_\d]*'
+    r'[a-zA-Z][a-zA-Z0-9_]*'
     if str(t.value) not in reserved_words:
         return t
 
@@ -69,7 +75,7 @@ data = '''
   + -20 *2
   "HELLO\n GOODBYE"
   //G = E
-  for
+  "HELLO AGAIN"
 '''
 
 # Give the lexer some input
