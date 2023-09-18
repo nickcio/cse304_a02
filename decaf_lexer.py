@@ -7,9 +7,11 @@ reserved_words = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
 #rsv = list(map(lambda x:x.replace('-','_'),reserved_words))
 
 tokens = tuple([
-    'INTEGER',
-    'FLOAT',
-    'STRING',
+    'COMMENT',
+    'INT_CONST',
+    'FLOAT_CONST',
+    'STRING_CONST',
+    'ID',
     'PLUS',
     'MINUS',
     'TIMES',
@@ -25,19 +27,26 @@ t_DIVIDE = r'/'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
 
-def t_FLOAT(t):
+def t_COMMENT(t):
+    r'(\/\*(.|\n)+\*\/)|(\/\/.*)'
+
+def t_FLOAT_CONST(t):
     r'(\d+.\d+([eE][+-]?\d+)?)|(\d+[eE][+-]?\d+)'
     t.value = float(t.value)
     return t
 
-def t_INTEGER(t):
+def t_INT_CONST(t):
     r'\d+'
     t.value = int(t.value)
     return t
 
-def t_STRING(t):
+def t_STRING_CONST(t):
     r'"[^"]*"'
     t.value = str(t.value[1:-1])
+    return t
+
+def t_ID(t):
+    r'[a-zA-Z][a-zA-Z_\d]*'
     return t
 
 def t_newline(t):
@@ -56,7 +65,8 @@ lexer = lex.lex()
 data = '''
 3 + 4.1e-10 * 10
   + -20 *2
-  "HELLO\nGOODBYE"
+  "HELLO\n GOODBYE"
+  //G = E
 '''
 
 # Give the lexer some input
