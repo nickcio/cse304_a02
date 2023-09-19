@@ -9,8 +9,7 @@ reserved_words = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
                   'SUPER', 'THIS', 'TRUE', 'VOID', 'WHILE']
 reserved_words = list(map(str.lower,reserved_words))
 
-tokens = tuple([
-    'COMMENT',
+tokens = (
     'INT_CONST',
     'FLOAT_CONST',
     'STRING_CONST',
@@ -21,16 +20,50 @@ tokens = tuple([
     'DIVIDE',
     'LPAREN',
     'RPAREN',
-    'COLON_COLON_EQUAL',
-])
+    'DOUBLE_PLUS',
+    'DOUBLE_MINUS',
+    'AND',
+    'OR',
+    'DOUBLE_EQUALS',
+    'NOT_EQUAL',
+    'L_EQ',
+    'G_EQ',
+    'LBRACK',
+    'RBRACK',
+    'SEMICOLON',
+    'DOT',
+    'COMMA',
+    'EQUALS',
+    'LESS',
+    'GREATER',
+    'NOT'
+)
 
+t_DOUBLE_PLUS = r'\+\+'
+t_DOUBLE_MINUS = r'--'
 t_PLUS = r'\+'
 t_MINUS = r'-'
 t_TIMES = r'\*'
 t_DIVIDE = r'/'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
-t_COLON_COLON_EQUAL = r'::='
+t_AND = r'&&'
+t_OR = r'\|\|'
+t_DOUBLE_EQUALS = r'=='
+t_NOT_EQUAL = r'!='
+t_L_EQ = r'<='
+t_G_EQ = r'>='
+t_LBRACK = r'{'
+t_RBRACK = r'}'
+t_SEMICOLON = r';'
+t_DOT = r'\.'
+t_COMMA = r','
+t_EQUALS = r'='
+t_LESS = r'<'
+t_GREATER = r'>'
+t_NOT = r'!'
+
+
 
 def t_COMMENT(t):
     r'(\/\*(.|\n)+\*\/)|(\/\/.*)'
