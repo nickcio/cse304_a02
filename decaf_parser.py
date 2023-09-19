@@ -2,7 +2,7 @@
 # Adam Lipson 114339915 alipson
 
 import ply.yacc as yacc
-from decaf_lexer import tokens
+from decaf_lexer import *
 
 start = 'program'
 
@@ -15,10 +15,6 @@ def p_program(p):
     program : program class_decl
             | empty
     """
-    if p[2]:
-        p[0] = p[1] + [p[2]] #program + class_decl
-    else:
-        p[0] = [] #empty
 
 def p_class_decl(p):
     """
@@ -28,111 +24,91 @@ def p_class_decl(p):
     """
 
 def p_class_body_decl_mult(p):
-    """class_body_decl_mult : class_body_decl_mult class_body_decl
-                            | class_body_decl"""
-    if p[2]:
-        p[0] = p[1] + [p[2]] #bodies
-    else:
-        p[0] = [p[1]] #body
+    """
+    class_body_decl_mult : class_body_decl_mult class_body_decl
+                         | class_body_decl
+    """
 
 def p_class_body_decl(p):
-    """class_body_decl : field_decl
-                       | method_decl
-                       | constructor_decl"""
-    p[0] = p[1]
+    """
+    class_body_decl : field_decl
+                    | method_decl
+                    | constructor_decl
+    """
     
 def p_field_decl(p):
-    """field_decl : modifier var_decl"""
-    p[0] = (p[1], #modifier
-            p[2]) #var decl
+    """
+    field_decl : modifier var_decl
+    """
 
 def p_modifier(p):
-    """modifier : visibility STATIC
-                | visibility
-       visibility : PUBLIC
-                  | PRIVATE
-                  | empty"""
-    n = len(p)
-    if n == 3:
-        p[0] = (p[1],p[2])
-    elif n == 2:
-        p[0] = (p[1])
+    """
+    modifier : visibility STATIC
+             | visibility
+    visibility : PUBLIC
+               | PRIVATE
+               | empty
+    """
     
 def p_var_decl(p):
-    """var_decl : type variables"""
-    p[0] = (p[1], #type
-            p[2]) #variables
+    """
+    var_decl : type variables
+    """
 
 def p_type(p):
-    """type : INT_CONST
-            | FLOAT_CONST
-            | STRING_CONST
-            | ID"""
-    p[0] = p[1]
+    """
+    type : INT_CONST
+         | FLOAT_CONST
+         | STRING_CONST
+         | ID
+    """
     
 def p_variables(p):
-    """variables : variables COMMA variable
-                 | variable"""
-    if p[2]:
-        p[0] = p[1] + [p[2]] #variables
-    else:
-        p[0] = [p[1]] #variable
+    """
+    variables : variables COMMA variable
+              | variable
+    """
 
 def p_variable(p):
-    """variable : ID"""
-    p[0] = p[1]
+    """
+    variable : ID
+    """
 
 def p_method_decl(p):
-    """method_decl : modifier type_void ID formals block
-                   | modifier type_void ID block
-       type_void : type
-                 | VOID"""
-    n = len(p)
-    if n == 6:
-        p[0] = (p[1], #modifier
-                p[2], #type
-                p[3], #id
-                p[4], #formals
-                p[5]) #block
-    elif n == 5:
-        p[0] = (p[1], #modifier
-                p[2], #type
-                p[3], #id
-                p[4]) #block
+    """
+    method_decl : modifier type_void ID formals block
+                | modifier type_void ID block
+    type_void : type
+              | VOID
+    """
 
 def p_constructor_decl(p):
-    """constructor_decl : modifier ID formals block
-                        | modifier ID block"""
-    n = len(p)
-    if n == 5:
-        p[0] = (p[1], #modifier
-                p[2], #id
-                p[3], #formals
-                p[4]) #block
-    elif n == 4:
-        p[0] = (p[1], #modifier
-                p[2], #id
-                p[3]) #block
+    """
+    constructor_decl : modifier ID formals block
+                     | modifier ID block
+    """
         
 def p_formals(p):
-    """formals : formals COMMA formal_param
-               | formal_param"""
+    """
+    formals : formals COMMA formal_param
+            | formal_param
+    """
 
 def p_formal_param(p):
-    """formal_param : type variable"""
-    p[0] = (p[1],p[2])
+    """
+    formal_param : type variable
+    """
 
 def p_block(p):
-    """block : LBRACK stmt_mult RBRACK"""
-    p[0] = p[2]
+    """
+    block : LBRACK stmt_mult RBRACK
+    """
 
 def p_stmt_mult(p):
-    """stmt_mult : stmt_mult stmt
-                 | empty"""
-    if p[2]:
-        p[0] = p[1] + [p[2]]
-    else:
-        p[0] = []
+    """
+    stmt_mult : stmt_mult stmt
+              | empty
+    """
 
 def p_stmt(p):
     """
@@ -163,7 +139,6 @@ def p_literal(p):
             | TRUE
             | FALSE
     """
-    p[0] = p[1]
 
 def p_primary(p):
     """
@@ -247,7 +222,14 @@ def p_unary_op(p):
              | NOT
     """
 
-def p_error(p):
-    return
+def p_stmt_expr(p):
+    """
+    stmt_expr : assign
+              | method_invocation
+    """
 
-yacc.yacc()
+def p_error(p):
+    print(f'Error: {p}')
+
+parser = yacc.yacc()
+

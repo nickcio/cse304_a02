@@ -7,9 +7,9 @@ reserved_words = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
                   'EXTENDS', 'FALSE', 'FOR', 'IF', 'INT',
                   'NEW', 'NULL', 'PRIVATE', 'PUBLIC', 'RETURN', 'STATIC',
                   'SUPER', 'THIS', 'TRUE', 'VOID', 'WHILE']
-reserved_words = list(map(str.lower,reserved_words))
+reserved_words_lower = list(map(str.lower,reserved_words))
 
-tokens = (
+tokens = tuple([
     'INT_CONST',
     'FLOAT_CONST',
     'STRING_CONST',
@@ -37,7 +37,7 @@ tokens = (
     'LESS',
     'GREATER',
     'NOT'
-)
+] + reserved_words)
 
 t_DOUBLE_PLUS = r'\+\+'
 t_DOUBLE_MINUS = r'--'
@@ -87,7 +87,7 @@ def t_STRING_CONST(t):
 
 def t_ID(t):
     r'[a-zA-Z][a-zA-Z0-9_]*'
-    if str(t.value) not in reserved_words:
+    if str(t.value) not in reserved_words_lower:
         return t
 
 def t_newline(t):
