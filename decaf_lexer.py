@@ -67,8 +67,6 @@ t_LESS = r'<'
 t_GREATER = r'>'
 t_NOT = r'!'
 
-
-
 def t_COMMENT(t):
     r'(\/\*(.|\n)+\*\/)|(\/\/.*)'
     pass

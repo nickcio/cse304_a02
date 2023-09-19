@@ -6,6 +6,17 @@ from decaf_lexer import *
 
 start = 'program'
 
+precedence = (
+    ('right','NOT'),
+    ('left','TIMES','DIVIDE'),
+    ('left','PLUS','MINUS'),
+    ('nonassoc','LESS','GREATER','L_EQ','G_EQ'),
+    ('left','DOUBLE_EQUALS','NOT_EQUAL'),
+    ('left','AND'),
+    ('left','OR'),
+    ('left','EQUALS')
+)
+
 def p_empty(p):
     'empty :'
     pass
@@ -19,7 +30,7 @@ def p_program(p):
 def p_class_decl(p):
     """
     class_decl : CLASS ID opt_extend LBRACK class_body_decl_mult RBRACK
-    opt_extend : LPAREN EXTENDS ID RPAREN
+    opt_extend : EXTENDS ID
                | empty
     """
 
