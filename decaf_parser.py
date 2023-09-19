@@ -43,23 +43,24 @@ def p_field_decl(p):
 
 def p_modifier(p):
     """
-    modifier : visibility STATIC
-             | visibility
+    modifier : visibility opt_static
     visibility : PUBLIC
                | PRIVATE
+               | empty
+    opt_static : STATIC
                | empty
     """
     
 def p_var_decl(p):
     """
-    var_decl : type variables
+    var_decl : type variables SEMICOLON
     """
 
 def p_type(p):
     """
-    type : INT_CONST
-         | FLOAT_CONST
-         | STRING_CONST
+    type : INT
+         | FLOAT
+         | BOOLEAN
          | ID
     """
     
@@ -76,16 +77,18 @@ def p_variable(p):
 
 def p_method_decl(p):
     """
-    method_decl : modifier type_void ID formals block
-                | modifier type_void ID block
+    method_decl : modifier type_void ID LPAREN opt_formals RPAREN block
+    opt_formals : formals
+                | empty
     type_void : type
               | VOID
     """
 
 def p_constructor_decl(p):
     """
-    constructor_decl : modifier ID formals block
-                     | modifier ID block
+    constructor_decl : modifier ID opt_formals_alt block
+    opt_formals_alt : formals
+                | empty
     """
         
 def p_formals(p):
@@ -230,6 +233,7 @@ def p_stmt_expr(p):
 
 def p_error(p):
     print(f'Error: {p}')
+    return "ERROR"
 
 parser = yacc.yacc()
 

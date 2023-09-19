@@ -3,11 +3,15 @@
 
 import ply.lex as lex
 
-reserved_words = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
-                  'EXTENDS', 'FALSE', 'FOR', 'IF', 'INT',
+reserved_words_upper = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
+                  'EXTENDS', 'FALSE', 'FLOAT', 'FOR', 'IF', 'INT',
                   'NEW', 'NULL', 'PRIVATE', 'PUBLIC', 'RETURN', 'STATIC',
                   'SUPER', 'THIS', 'TRUE', 'VOID', 'WHILE']
-reserved_words_lower = list(map(str.lower,reserved_words))
+reserved_words = {}
+for word in reserved_words_upper:
+    reserved_words[word.lower()] = word
+
+
 
 tokens = tuple([
     'INT_CONST',
@@ -37,7 +41,7 @@ tokens = tuple([
     'LESS',
     'GREATER',
     'NOT'
-] + reserved_words)
+] + reserved_words_upper)
 
 t_DOUBLE_PLUS = r'\+\+'
 t_DOUBLE_MINUS = r'--'
@@ -87,8 +91,11 @@ def t_STRING_CONST(t):
 
 def t_ID(t):
     r'[a-zA-Z][a-zA-Z0-9_]*'
-    if str(t.value) not in reserved_words_lower:
-        return t
+    if t.value in reserved_words.keys():
+        t.type = reserved_words[t.value]
+    else:
+        t.type = 'ID'
+    return t
 
 def t_newline(t):
     r'\n+'
