@@ -77,18 +77,17 @@ def p_variable(p):
 
 def p_method_decl(p):
     """
-    method_decl : modifier type_void ID LPAREN opt_formals RPAREN block
+    method_decl : modifier type ID LPAREN opt_formals RPAREN block
+                | modifier VOID ID LPAREN opt_formals RPAREN block
     opt_formals : formals
                 | empty
-    type_void : type
-              | VOID
     """
 
 def p_constructor_decl(p):
     """
-    constructor_decl : modifier ID opt_formals_alt block
+    constructor_decl : modifier ID LPAREN opt_formals_alt RPAREN block
     opt_formals_alt : formals
-                | empty
+                    | empty
     """
         
 def p_formals(p):
