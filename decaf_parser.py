@@ -49,6 +49,11 @@ def p_modifier(p):
        visibility : PUBLIC
                   | PRIVATE
                   | empty"""
+    n = len(p)
+    if n == 3:
+        p[0] = (p[1],p[2])
+    elif n == 2:
+        p[0] = (p[1])
     
 def p_var_decl(p):
     """var_decl : type variables"""
@@ -118,6 +123,52 @@ def p_formal_param(p):
     """formal_param : type variable"""
     p[0] = (p[1],p[2])
 
+def p_block(p):
+    """block : '{' stmt_mult '}'"""
+    p[0] = p[2]
 
+def p_stmt_mult(p):
+    """stmt_mult : stmt_mult stmt
+                 | empty"""
+    if p[2]:
+        p[0] = p[1] + [p[2]]
+    else:
+        p[0] = []
+
+def p_stmt(p):
+    """stmt : if_stmt
+            | while_stmt
+            | for_stmt
+            | return_stmt ';'
+            | stmt_expr ';'
+            | BREAK ';'
+            | CONTINUE ';'
+            | block
+            | var_decl
+            | ';'"""
+    n = len(p)
+    if n == 2:
+        p[0] = p[1]
+    elif n == 3:
+        p[0] = (p[1],
+                p[2])    
+
+def p_if_stmt(p):
+    """if_stmt : IF '(' expr ')' stmt
+               | IF '(' expr ')' stmt ELSE stmt"""
+    n = len(p)
+    if n == 6:
+        p[0] = (p[3],
+                p[5])
+    elif n == 8:
+        p[0] = (p[3],
+                p[5],
+                p[7])
+        
+def p_while_stmt(p):
+    """while_stmt : WHILE '(' expr ')' stmt"""
+    p[0] = (p[3],p[4])
+
+#def p_for_stmt(p):
 
 
