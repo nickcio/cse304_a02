@@ -68,7 +68,7 @@ t_GREATER = r'>'
 t_NOT = r'!'
 
 def t_COMMENT(t):
-    r'(\/\*(.|\n)+\*\/)|(\/\/.*)'
+    r'(/[*][^*]*[*]+([^/*][^*]*[*]+)*/)|(//[^\n]*)'
     pass
 
 def t_FLOAT_CONST(t):

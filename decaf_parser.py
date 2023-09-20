@@ -243,7 +243,7 @@ def p_stmt_expr(p):
 
 def p_error(p):
     print(f'Error: {p}')
-    return "ERROR"
+    exit()
 
 parser = yacc.yacc()
 
