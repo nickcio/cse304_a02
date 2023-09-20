@@ -104,7 +104,12 @@ def t_newline(t):
 t_ignore  = ' \t'
 
 def t_error(t):
-    print(f'Scanning Error: Illegal character {t.value[0]} at line number {t.lexer.lineno}')
-    t.lexer.skip(1)
+    if t:
+        line_start = t.lexer.lexdata.rfind('\n', 0, t.lexpos) + 1
+        column = (t.lexpos - line_start) + 1
+        print(f'Scanning Error: Illegal character {t.value[0]} at line number {t.lexer.lineno} and column {column}')
+        t.lexer.skip(1)
+    else:
+        print(f'Unexpected Scanning Error')
 
 lexer = lex.lex()

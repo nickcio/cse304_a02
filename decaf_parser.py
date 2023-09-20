@@ -243,7 +243,9 @@ def p_stmt_expr(p):
 
 def p_error(p):
     if p:
-        print(f'Parsing Error: Unexpected Token \'{p.value}\' of type \'{p.type}\' at line number {p.lexer.lineno}')
+        line_start = p.lexer.lexdata.rfind('\n', 0, p.lexpos) + 1
+        column = (p.lexpos - line_start)
+        print(f'Parsing Error: Unexpected Token \'{p.value}\' of type \'{p.type}\' at line number {p.lexer.lineno} and column {column}')
     else: 
         print(f'Unexpected Parsing Error')
     exit()
