@@ -69,6 +69,8 @@ t_NOT = r'!'
 
 def t_COMMENT(t):
     r'(/[*][^*]*[*]+([^/*][^*]*[*]+)*/)|(//[^\n]*)'
+    linecount = t.value.count('\n')
+    if linecount: t.lexer.lineno += linecount
     pass
 
 def t_FLOAT_CONST(t):
@@ -102,7 +104,7 @@ def t_newline(t):
 t_ignore  = ' \t'
 
 def t_error(t):
-    print("Illegal character '%s'" % t.value[0])
+    print(f'Scanning Error: Illegal character {t.value[0]} at line number {t.lexer.lineno}')
     t.lexer.skip(1)
 
 lexer = lex.lex()

@@ -7,14 +7,14 @@ from decaf_lexer import *
 start = 'program'
 
 precedence = (
-    ('right','NOT'),
-    ('left','TIMES','DIVIDE'),
-    ('left','PLUS','MINUS'),
-    ('nonassoc','LESS','GREATER','L_EQ','G_EQ'),
-    ('left','DOUBLE_EQUALS','NOT_EQUAL'),
-    ('left','AND'),
+    ('left','EQUALS'), #lowest
     ('left','OR'),
-    ('left','EQUALS')
+    ('left','AND'),
+    ('left','DOUBLE_EQUALS','NOT_EQUAL'),
+    ('nonassoc','LESS','GREATER','L_EQ','G_EQ'),
+    ('left','PLUS','MINUS'),
+    ('left','TIMES','DIVIDE'),
+    ('right','NOT'), #highest
 )
 
 def p_empty(p):
@@ -242,7 +242,10 @@ def p_stmt_expr(p):
     """
 
 def p_error(p):
-    print(f'Error: {p}')
+    if p:
+        print(f'Parsing Error: Unexpected Token \'{p.value}\' of type \'{p.type}\' at line number {p.lexer.lineno}')
+    else: 
+        print(f'Unexpected Parsing Error')
     exit()
 
 parser = yacc.yacc()
