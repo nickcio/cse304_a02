@@ -74,7 +74,8 @@ def t_COMMENT(t):
     pass
 
 def t_FLOAT_CONST(t):
-    r'(\d+.\d+([eE][+-]?\d+)?)|(\d+[eE][+-]?\d+)'
+    r'\d+.\d+'
+    #r'(\d+.\d+([eE][+-]?\d+)?)|(\d+[eE][+-]?\d+)'
     t.value = float(t.value)
     return t
 
@@ -106,10 +107,11 @@ t_ignore  = ' \t'
 def t_error(t):
     if t:
         line_start = t.lexer.lexdata.rfind('\n', 0, t.lexpos) + 1
-        column = (t.lexpos - line_start) + 1
+        column = (t.lexpos - line_start)
         print(f'Scanning Error: Illegal character {t.value[0]} at line number {t.lexer.lineno} and column {column}')
         t.lexer.skip(1)
     else:
         print(f'Unexpected Scanning Error')
+    exit()
 
 lexer = lex.lex()
