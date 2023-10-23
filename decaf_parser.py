@@ -17,28 +17,43 @@ precedence = (
     ('right','NOT'), #highest
 )
 
+def flatten(lst):
+    return [item for sublist in lst for item in (flatten(sublist) if isinstance(sublist, list) else [sublist])]
+
+
 def p_empty(p):
     'empty :'
-    pass
+    p[0] = None
 
 def p_program(p):
-    """
-    program : program class_decl
-            | empty
-    """
+    '''
+    program : class_decl
+             | class_decl program
+             | empty'''
+    if len(p) == 2:
+      p[0] = [p[1]]
+    else:
+      p[0] = flatten([p[1],p[2]])
+ 
 
 def p_class_decl(p):
     """
     class_decl : CLASS ID opt_extend LBRACK class_body_decl_mult RBRACK
     opt_extend : EXTENDS ID
-               | empty
+                | empty
     """
+
+
 
 def p_class_body_decl_mult(p):
     """
     class_body_decl_mult : class_body_decl_mult class_body_decl
                          | class_body_decl
     """
+    if len(p) == 3:  
+        p[0] = p[1] + [p[2]]
+    else:  # The production rule: class_body_decl
+        p[0] = [p[1]]
 
 def p_class_body_decl(p):
     """
@@ -46,11 +61,21 @@ def p_class_body_decl(p):
                     | method_decl
                     | constructor_decl
     """
+    if len(p) == 2:
+      p[0] = [p[1]]
+    else:
+      p[0] = flatten([p[1], p[2]])
     
+   
 def p_field_decl(p):
     """
     field_decl : modifier var_decl
     """
+    p[0] = {
+        'type': 'field_decl',
+        'modifier': p[1],
+        'var_decl': p[2]
+    }
 
 def p_modifier(p):
     """
@@ -61,6 +86,10 @@ def p_modifier(p):
     opt_static : STATIC
                | empty
     """
+    if len(p) > 2:
+      p[0] = [p[1], p[2]]
+    else:
+      p[0] = [p[1]]
     
 def p_var_decl(p):
     """

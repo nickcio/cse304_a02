@@ -17,6 +17,7 @@ class AST:
         self.fields = fields
         self.methods = methods
         self.constructors = constructors
+        writeJSON("ast.json", ast)
 
         if "class_name" not in ast:
             error("Could not find class name")
@@ -346,6 +347,12 @@ def readJSON(filename):
     with open(filename, 'r') as infile:
         data = json.load(infile)
     return data
+
+
+def writeAST(ast_blocks):
+    global scope
+
+    return print_ast_blocks(ast_blocks)
 
 def print_ast_blocks(ast_blocks):
     output = "-----------------------------------------------\n"
