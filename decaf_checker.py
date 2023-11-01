@@ -5,31 +5,33 @@ import sys
 import ply.lex as lex
 import ply.yacc as yacc
 
-import decaf_ast
+from decaf_ast import *
 import decaf_lexer
 import decaf_parser
+import decaf_ast
 
 
 def just_scan(fn=""):
+   # print("Scanning...")
     fn = sys.argv[1] if len(sys.argv) > 1 else ""
     if fn == "":
         print("Missing file name for source program.")
         print("USAGE: python3 decaf_checker.py <decaf_source_file_name>")
         sys.exit()
     import decaf_lexer
-    lexer = lex.lex(module = decaf_lexer)#, debug = 1)
+    lexer = lex.lex(module = decaf_lexer, debug = 0)
 
     fh = open(fn, 'r')
     source = fh.read()
     lexer.input(source)
     next_token = lexer.token()
     while next_token != None:
-        print(next_token)
+    #    print(next_token)
         next_token = lexer.token()
 # end def just_scan()
 
 def just_parse(fn=""):
-    print("Parsing...")
+  #  print("Parsing...")
     if fn == "":
         print("Missing file name for source program.")
         print("USAGE: python3 decaf_checker.py <decaf_source_file_name>")
@@ -41,7 +43,6 @@ def just_parse(fn=""):
     source = fh.read()
     fh.close()
     result = parser.parse(source, lexer = lexer, debug = 0)
-    print(result)
     ast = decaf_ast.writeAST(result)
     # Parsing Successful
     print(ast)

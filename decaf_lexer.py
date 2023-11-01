@@ -2,116 +2,164 @@
 # Adam Lipson 114339915 alipson
 
 import ply.lex as lex
+TERMINAL_RED_PRINT = '\033[91m'
+TERMINAL_CLEAR_PRINT = '\033[0m'
 
-reserved_words_upper = ['BOOLEAN', 'BREAK', 'CONTINUE', 'CLASS', 'DO', 'ELSE',
-                  'EXTENDS', 'FALSE', 'FLOAT', 'FOR', 'IF', 'INT',
-                  'NEW', 'NULL', 'PRIVATE', 'PUBLIC', 'RETURN', 'STATIC',
-                  'SUPER', 'THIS', 'TRUE', 'VOID', 'WHILE']
-reserved_words = {}
-for word in reserved_words_upper:
-    reserved_words[word.lower()] = word
+reserved = {
+    'boolean': 'BOOLEAN',
+    'break': 'BREAK',
+    'extends': 'EXTENDS',
+    'new': 'NEW',
+    'null': 'NULL',
+    'super': 'SUPER',
+    'this': 'THIS',
+    'continue': 'CONTINUE',
+    'class': 'CLASS',
+    'float': 'FLOAT',
+    'for': 'FOR',
+    'private': 'PRIVATE',
+    'public': 'PUBLIC',
+    'void': 'VOID',
+    'while': 'WHILE',
+    'do': 'DO',
+    'else': 'ELSE',
+    'if': 'IF',
+    'int': 'INT',
+    'return': 'RETURN',
+    'static': 'STATIC',
+    'string': 'STRING'
+}
 
-
-
-tokens = tuple([
-    'INT_CONST',
-    'FLOAT_CONST',
-    'STRING_CONST',
-    'ID',
+tokens = [
+    'DOT',
+    'COMMA',
+    'INTEGER',
     'PLUS',
+    'PLUSPLUS',
     'MINUS',
+    'MINUSMINUS',
     'TIMES',
     'DIVIDE',
     'LPAREN',
     'RPAREN',
-    'DOUBLE_PLUS',
-    'DOUBLE_MINUS',
-    'AND',
-    'OR',
-    'DOUBLE_EQUALS',
-    'NOT_EQUAL',
-    'L_EQ',
-    'G_EQ',
-    'LBRACK',
-    'RBRACK',
-    'SEMICOLON',
-    'DOT',
-    'COMMA',
-    'EQUALS',
-    'LESS',
+    'LCURLY',
+    'RBRACKET',
+    'LBRACKET',
+    'RCURLY',
+    'EQUAL',
+    'NOTEQUAL',
     'GREATER',
-    'NOT'
-] + reserved_words_upper)
+    'LESS',
+    'GREATEREQ',
+    'LESSEQ',
+    'OR',
+    'AND',
+    'NOT',
+    'TRUE',
+    'FALSE',  
+    'SETEQUAL',
+    'SEMICOLON',
+    'STRING_LITERAL',
+    'ERROR',  
+    'ID'
+] + list(reserved.values())
 
-t_DOUBLE_PLUS = r'\+\+'
-t_DOUBLE_MINUS = r'--'
-t_PLUS = r'\+'
-t_MINUS = r'-'
-t_TIMES = r'\*'
-t_DIVIDE = r'/'
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
-t_AND = r'&&'
-t_OR = r'\|\|'
-t_DOUBLE_EQUALS = r'=='
-t_NOT_EQUAL = r'!='
-t_L_EQ = r'<='
-t_G_EQ = r'>='
-t_LBRACK = r'{'
-t_RBRACK = r'}'
-t_SEMICOLON = r';'
+t_COMMA = r'\,'
 t_DOT = r'\.'
-t_COMMA = r','
-t_EQUALS = r'='
-t_LESS = r'<'
-t_GREATER = r'>'
-t_NOT = r'!'
+t_AND = r'\&\&'
+t_BOOLEAN = r'boolean'
+t_BREAK = r'break'
+t_CLASS = r'class'
+t_CONTINUE = r'continue'
+t_DIVIDE = r'/'
+t_DO = r'do'
+t_ELSE = r'else'
+t_EQUAL = r'\=\='
+t_EXTENDS = r'extends'
+t_FOR = r'for'
+t_GREATER = r'\>'
+t_GREATEREQ = r'\>\='
+t_IF = r'if'
+t_INT = r'int'
+t_LBRACKET = r'\['
+t_LCURLY = r'\{'
+t_LESS = r'\<'
+t_LESSEQ = r'\<\='
+t_LPAREN = r'\('
+t_MINUSMINUS = r'\-\-'
+t_MINUS = r'-'
+t_NEW = r'new'
+t_NOT = r'\!'
+t_NOTEQUAL = r'\!\='
+t_NULL = r'null'
+t_OR = r'\|\|'
+t_PLUSPLUS = r'\+\+'
+t_PLUS = r'\+'
+t_PRIVATE = r'private'
+t_PUBLIC = r'public'
+t_RBRACKET = r'\]'
+t_RCURLY = r'\}'
+t_RETURN = r'return'
+t_RPAREN = r'\)'
+t_SEMICOLON = r'\;'
+t_SETEQUAL = r'\='
+t_STATIC = r'static'
+t_STRING= r'string'
+t_SUPER = r'super'
+t_THIS = r'this'
+t_TIMES = r'\*'
+t_VOID = r'void'
+t_WHILE = r'while'
 
-def t_COMMENT(t):
-    r'(/[*][^*]*[*]+([^/*][^*]*[*]+)*/)|(//[^\n]*)'
-    linecount = t.value.count('\n')
-    if linecount: t.lexer.lineno += linecount
-    pass
+t_ignore = ' \t'
 
-def t_FLOAT_CONST(t):
-    r'\d+.\d+'
-    #r'(\d+.\d+([eE][+-]?\d+)?)|(\d+[eE][+-]?\d+)'
+def t_FLOAT(t):
+    r'\d+\.\d+'
     t.value = float(t.value)
     return t
 
-def t_INT_CONST(t):
+def t_INTEGER(t):
     r'\d+'
     t.value = int(t.value)
     return t
 
-def t_STRING_CONST(t):
+def t_STRING_LITERAL(t):
     r'"[^"]*"'
-    #t.value = str(t.value[1:-1])
-    t.value = str(t.value)
+    t.value = t.value[1:-1] 
     return t
 
-def t_ID(t):
-    r'[a-zA-Z][a-zA-Z0-9_]*'
-    if t.value in reserved_words.keys():
-        t.type = reserved_words[t.value]
-    else:
-        t.type = 'ID'
+def t_TRUE(t):
+    r'true'
+    t.value = True
     return t
+
+def t_FALSE(t):
+    r'false'
+    t.value = False
+    return t
+
 
 def t_newline(t):
     r'\n+'
-    t.lexer.lineno += 1
+    t.lexer.lineno += len(t.value)
 
-t_ignore  = ' \t'
+def find_column(input, token):
+    line_start = input.rfind('\n', 0, token.lexpos) + 1
+    return (token.lexpos - line_start) + 1
+
+def t_ID(t):
+    r'[a-zA-Z_][a-zA-Z_0-9]*'
+    if t.value in reserved:
+        t.type = reserved[t.value]  
+    else:
+        t.type = 'ID'  
+    return t
 
 def t_error(t):
-    if t:
-        line_start = t.lexer.lexdata.rfind('\n', 0, t.lexpos) + 1
-        column = (t.lexpos - line_start)
-        print(f'Scanning Error: Illegal character {t.value[0]} at line number {t.lexer.lineno} and column {column}')
-        t.lexer.skip(1)
-    else:
-        print(f'Unexpected Scanning Error')
-    exit()
+    print("Illegal character '%s'" % t.value[0])
+    t.lexer.skip(1)
+    t.lexer.lexpos += len(t.value)    
 
-lexer = lex.lex()
+def t_COMMENT(t):
+    r'(/\*(.|\n)*?\*/)|(//.*)'
+    t.lexer.lineno += t.value.count('\n')
