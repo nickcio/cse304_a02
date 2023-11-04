@@ -1,3 +1,6 @@
+# Nicholas Ciotoli 113325368 nciotoli
+# Adam Lipson 114339915 alipson
+
 import json, sys
 
 field_count = 1
@@ -8,167 +11,124 @@ var_count = 1
 valid_types = ["int", "boolean", "string", "float", "double", "char"]
 user_defined_types = []
 
-# input
 in_class = {
-  "type": "class",
-  "id_num": 1,
-  "children": [
-    {
-      "scan_int": {
-        "type": "method",
-        "id_num": 1,
-        "return_type": "int",
-        "modifiers": [
-          "public",
-          "static"
-        ],
-        "children": {}
-      }
-    },
-    {
-      "scan_float": {
-        "type": "method",
-        "id_num": 2,
-        "return_type": "float",
-        "modifiers": [
-          "public",
-          "static"
-        ],
-        "children": {}
-      }
-    }
-  ]
+    "type": "class",
+    "id_num": 1,
+    "children": [
+        {
+            "scan_int": {
+                "type": "method",
+                "id_num": 1,
+                "return_type": "int",
+                "modifiers": ["public", "static"],
+                "children": {},
+            }
+        },
+        {
+            "scan_float": {
+                "type": "method",
+                "id_num": 2,
+                "return_type": "float",
+                "modifiers": ["public", "static"],
+                "children": {},
+            }
+        },
+    ],
 }
 
-# output
 out_class = {
-  "type": "class",
-  "id_num": 2,
-  "children": [
-    {
-      "print": {
-        "type": "method",
-        "id_num": 3,
-        "return_type": "void",
-        "modifiers": [
-          "public",
-          "static"
-        ],
-        "children": [
-          {
-            "i": {
-              "type": "int",
-              "var_type": "field",
-              "id_num": 2,
-              "return_type": "string",
-              "children": {}
+    "type": "class",
+    "id_num": 2,
+    "children": [
+        {
+            "print": {
+                "type": "method",
+                "id_num": 3,
+                "return_type": "void",
+                "modifiers": ["public", "static"],
+                "children": [
+                    {
+                        "i": {
+                            "type": "int",
+                            "var_type": "field",
+                            "id_num": 2,
+                            "return_type": "string",
+                            "children": {},
+                        }
+                    }
+                ],
             }
-          }
-        ]
-      }
-    },
-    {
-      "print": {
-        "type": "method",
-        "id_num": 1,
-        "modifiers": [
-          "public",
-          "static"
-        ],
-        "return_type": "void",
-        "children": [
-          {
-            "i": {
-              "type": "float",
-              "id_num": 1,
-              "id": "i",
-              "var_type": "formal"
+        },
+        {
+            "print": {
+                "type": "method",
+                "id_num": 1,
+                "modifiers": ["public", "static"],
+                "return_type": "void",
+                "children": [
+                    {
+                        "i": {
+                            "type": "float",
+                            "id_num": 1,
+                            "id": "i",
+                            "var_type": "formal",
+                        }
+                    }
+                ],
             }
-          }
-        ]
-      }
-    },
-    {
-      "print": {
-        "type": "method",
-        "id_num": 1,
-        "modifiers": [
-          "public",
-          "static"
-        ],
-        "return_type": "void",
-        "children": [
-          {
-            "i": {
-              "type": "string",
-              "id_num": 1,
-              "id": "i",
-              "var_type": "formal"
+        },
+        {
+            "print": {
+                "type": "method",
+                "id_num": 1,
+                "modifiers": ["public", "static"],
+                "return_type": "void",
+                "children": [
+                    {
+                        "i": {
+                            "type": "string",
+                            "id_num": 1,
+                            "id": "i",
+                            "var_type": "formal",
+                        }
+                    }
+                ],
             }
-          }
-        ]
-      }
-    },
-    {
-      "print": {
-        "type": "method",
-        "id_num": 6,
-        "modifiers": [
-          "public",
-          "static"
-        ],
-        "return_type": "void",
-        "children": [
-          {
-            "i": {
-              "type": "boolean",
-              "id_num": 1,
-              "id": "i",
-              "var_type": "formal"
+        },
+        {
+            "print": {
+                "type": "method",
+                "id_num": 6,
+                "modifiers": ["public", "static"],
+                "return_type": "void",
+                "children": [
+                    {
+                        "i": {
+                            "type": "boolean",
+                            "id_num": 1,
+                            "id": "i",
+                            "var_type": "formal",
+                        }
+                    }
+                ],
             }
-          }
-        ]
-      }
-    }
-  ]
+        },
+    ],
 }
 
 scope = {"global": {"In": in_class, "Out": out_class}}
 
 
 class err_class(Exception):
-  def __init__(self, msg):
-      self.msg = msg
-      RED = '\033[91m'
-      CLEAR_FORMAT = '\033[0m'
-      self.err_msg = f"{RED}ERROR: {CLEAR_FORMAT}{msg}"
-      raise Exception(self.err_msg)
+    def __init__(self, msg):
+        self.msg = msg
+        RED = "\033[91m"
+        CLEAR_FORMAT = "\033[0m"
+        self.err_msg = f"{RED}ERROR: {CLEAR_FORMAT}{msg}"
+        raise Exception(self.err_msg)
 
-  def __str__(self):
-      return self.msg
-
-
-
-def debug(string):
-    PURPLE = "\033[95mDEBUG: "
-    CLEAR_COLOR = "\033[0m\n"
-    if isinstance(string, dict):
-        print(PURPLE + json.dumps(string, indent=4, default=str) + CLEAR_COLOR)
-    elif isinstance(string, list):
-        # check if each item is dict
-        str_list = []
-        for item in string:
-            if isinstance(item, dict):
-                str_list.append(json.dumps(item, indent=4, default=str))
-            else:
-                str_list.append(str(item))
-        print(
-            PURPLE
-            + "\n=========================================\n".join(str_list)
-            + CLEAR_COLOR
-        )
-    else:
-        print(PURPLE + str(string) + CLEAR_COLOR)
+    def __str__(self):
+        return self.msg
 
 
 def warn(string):
@@ -190,7 +150,6 @@ class AST:
         self.fields = fields
         self.methods = methods
         self.constructors = constructors
-        writeJSON("ast.json", ast)
 
         if "class_name" not in ast:
             error("Could not find class name")
@@ -274,7 +233,6 @@ class AST:
         return output
 
     def create_field_record(self, scope, scope_array):
-
         output = "Fields:\n"
         blacklist = []
         for field_id in self.fields.keys():
@@ -313,7 +271,6 @@ class AST:
         return output
 
     def create_constructor_record(self, scope, scope_array):
-
         output = "Constructors:\n"
         for constructor_id in self.constructors.keys():
             local_scope = scope.copy()
@@ -439,7 +396,6 @@ class AST:
             )
 
             output += "Variable Table:\n"
-            # check scope for variables
             for variable in local_scope:
                 for var_id in variable.keys():
                     if variable[var_id]["formal"]:
@@ -464,16 +420,14 @@ class AST:
                 expr = ""
             statements += expr
         output += statements
-        # if output ends with newline and comma, remove it
         if output[-3:] == "\n, ":
             output = output[:-2]
-        output += "])\n"  # use backspace to remove the last comma
+        output += "])\n"
         if ast_block == []:
             output = "Skip()"
         return output
 
     def create_type_record(self, ast_type, return_type=0):
-
         output = ""
         global valid_types, user_defined_types
 
@@ -486,7 +440,6 @@ class AST:
             return output
 
         if ast_type not in local_valid_types:
-            # raise Exception("Invalid type")
             error(
                 f"Line:{ast_type['line_num']}:{ast_type['col_num']}: Invalid type {ast_type}"
             )
@@ -1008,7 +961,6 @@ class AST:
                 found = 0
 
                 for child in scope["global"][self.class_name]["children"]:
-
                     if ast_primary["id"] in child:
                         if child[ast_primary["id"]]["super"]:
                             found = 1
@@ -1019,7 +971,6 @@ class AST:
                     )
 
             elif primary == "":
-
                 if isinstance(local_scope, list):
                     for child in local_scope:
                         if ast_primary["id"] in scope:
@@ -1034,9 +985,7 @@ class AST:
                         f"Line:{ast_primary['line_num']}:{ast_primary['col_num']}: Could not find identifier in scope"
                     )
             else:
-
                 if primary not in scope["global"]:
-
                     var = self.get_var_from_scope(primary, scope_array)
                     if var == None:
                         error(
@@ -1194,15 +1143,6 @@ class AST:
         return scope
 
 
-# printing functions
-
-
-def writeJSON(filename, data):
-    with open(filename, "w") as outfile:
-        json.dump(data, outfile, indent=2)
-    return True
-
-
 def readJSON(filename):
     with open(filename, "r") as infile:
         data = json.load(infile)
@@ -1210,7 +1150,6 @@ def readJSON(filename):
 
 
 def writeAST(ast_blocks):
-
     output = "-----------------------------------------------\n"
     for ast in ast_blocks:
         if ast == None:
@@ -1251,19 +1190,23 @@ def extract_body(ast):
 
 
 def extract_variables_from_formals(key, ast):
+    global var_count
+
     if key not in ast:
         raise Exception(f"Could not find {key}")
+
     if "formals" not in ast[key]:
-        raise Exception("Could not find formals")
-    global var_count
+        raise Exception(f"Could not find formals in {key}")
+
     params = {}
+
     for item in ast[key]["formals"]:
-        if "parameter" in item:
-            item["parameter"]["var_type"] = "local"
-            params[var_count] = item["parameter"]
-            var_count += 1
-        else:
-            raise Exception("Could not find variable")
+        if "parameter" not in item:
+            raise Exception("Could not find parameter in formals item")
+        item["parameter"]["var_type"] = "local"
+        params[var_count] = item["parameter"]
+        var_count += 1  #
+
     ast[key]["formals"] = params
     return ast
 
@@ -1288,18 +1231,12 @@ def extract_variables_from_field(ast):
 def compare_var(obj1, obj2):
     if obj1 == obj2:
         return True
-    if isinstance(obj1, dict) and isinstance(obj2, dict):
-        if "type" not in obj1 or "type" not in obj2:
+
+    if not (isinstance(obj1, dict) and isinstance(obj2, dict)):
+        return False
+
+    for key in ("type", "id", "var_type"):
+        if key not in obj1 or key not in obj2 or obj1[key] != obj2[key]:
             return False
-        if obj1["type"] != obj2["type"]:
-            return False
-        if "id" not in obj1 or "id" not in obj2:
-            return False
-        if obj1["id"] != obj2["id"]:
-            return False
-        if "var_type" not in obj1 or "var_type" not in obj2:
-            return False
-        if obj1["var_type"] != obj2["var_type"]:
-            return False
-        return True
-    return False
+
+    return True
