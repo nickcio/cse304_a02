@@ -8,7 +8,7 @@ method_count = 6
 class_count = 1
 class_overall_count = 3
 var_count = 1
-valid_types = ["int", "boolean", "string", "float", "double", "char"]
+valid_types = ["int", "boolean", "string", "float", "double", "char", "void", "error", "null"]
 user_defined_types = []
 
 in_class = {

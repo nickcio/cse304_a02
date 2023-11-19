@@ -81,7 +81,8 @@ def p_type(p):
             | FLOAT
             | BOOLEAN
             | STRING
-            | ID'''
+            | ID
+            | VOID'''
     p[0] = p[1]
 
 
