@@ -6,8 +6,6 @@ import sys
 from decaf_lexer import tokens
 from decaf_ast import extract_body, extract_variables_from_formals, extract_variables_from_field, var_count
 
-x = [0]
-
 def flatten(lst):
     return [item for sublist in lst for item in (flatten(sublist) if isinstance(sublist, list) else [sublist])]
 

@@ -2,6 +2,8 @@
 # Adam Lipson 114339915 alipson
 
 import json, sys
+from collections import defaultdict 
+import re
 
 field_count = 1
 method_count = 6
@@ -10,6 +12,9 @@ class_overall_count = 3
 var_count = 1
 valid_types = ["int", "boolean", "string", "float", "double", "char", "void", "error", "null"]
 user_defined_types = []
+global_method_type = " "
+
+variable_table = defaultdict(dict)
 
 in_class = {
     "type": "class",
@@ -129,13 +134,6 @@ class err_class(Exception):
 
     def __str__(self):
         return self.msg
-
-
-def warn(string):
-    YELLOW = "\033[93mWARN: "
-    CLEAR_COLOR = "\033[0m"
-    print(YELLOW + str(string) + CLEAR_COLOR)
-
 
 def error(string):
     RED = "\033[91m"
@@ -338,6 +336,7 @@ class AST:
         return output
 
     def create_method_record(self, scope, scope_array):
+        global global_method_type
         output = "Methods:\n"
         for method_id in self.methods.keys():
             local_scope = scope
@@ -346,6 +345,10 @@ class AST:
             method_name = method["function_id"]
             method_modifiers = self.create_modifiers_list(method["modifiers"])
             method_type = self.create_type_record(method["type"], 1)
+
+
+            global_method_type = method_type
+        
 
             output += f"METHOD: {method_id}, {method_name}, {self.class_name}, {method_modifiers}, {method_type}\n"
             output += "Method Parameters:\n"
@@ -449,6 +452,7 @@ class AST:
     def create_variable_record(self, variable_id, ast_variable):
         output = ""
         output += f"VARIABLE {variable_id}, {ast_variable['id']}, {ast_variable['var_type']}, {ast_variable['type']}\n"
+        variable_table[variable_id] = ast_variable
         return output
 
     def create_modifiers_list(self, ast_modifiers):
@@ -475,7 +479,7 @@ class AST:
             output = "public"
         return output
 
-    def create_statement_record(self, ast_statement, scope, scope_array):
+    def create_statement_record(self, ast_statement, scope, scope_array, return_type = 0):
         output = ""
         if ast_statement == None:
             return output
@@ -556,6 +560,7 @@ class AST:
             error(
                 f"Line:{ast_variable_declaration['line_num']}:{ast_assignment['col_num']}: Could not find assignment"
             )
+
         output = ""
         assignment = ast_assignment["set_equal"]
         if "assign" not in assignment:
@@ -575,11 +580,82 @@ class AST:
 
         assignee = f"{var_id_num}"
 
+        exit_flag = False
+        if 'unary_expression' in operand.get('assigned_value', {}).get('expression', {}):
+            print(operand['assigned_value']['expression']['unary_expression']['operator'])
+            if operand['assigned_value']['expression']['unary_expression']['operator'] == '+' or '%' or '-' or '*' or '/':
+                for i in variable_table:
+                    if variable_table[i]['id'] == operand['assigned_value']['expression']['unary_expression']['operand']['expression']['field_access']['id']:
+                       if variable_table[i]['type'] == 'boolean' or variable_table[i]['type'] == 'Boolean':
+                           error("Expression is not a number")
+                if operand['assigned_value']['expression']['unary_expression']['operator'] == '!':
+                    for i in variable_table:
+                        if variable_table[i]['id'] == operand['assigned_value']['expression']['unary_expression']['operand']['expression']['field_access']['id']:
+                            if variable_table[i]['type'] == 'boolean' or variable_table[i]['type'] != 'Boolean':
+                                error("Expression is not a boolean")
+        try:
+            if 'expression' in operand.get('assigned_value', {}):
+                if operand['assigned_value']['expression']['binary_expression']['operator'] in ['+', '%', '-', '*', '/']:
+                    if operand['assigned_value']['expression']['binary_expression']['right']['expression']['literal']['type'] not in ['int', 'float', 'double', 'Integer', 'Float', 'Double']:
+                        exit_flag = True
+                        error("Expression is not a number")
+                    if operand['assigned_value']['expression']['binary_expression']['left']['expression']['literal']['type'] not in ['int', 'float', 'double', 'Integer', 'Float', 'Double']:
+                        exit_flag = True
+                        error("Expression is not a number")
+                elif operand['assigned_value']['expression']['binary_expression']['operator'] in ['&&', '||', '==', '!=', '<', '<=', '>', '>=']:
+                    if operand['assigned_value']['expression']['binary_expression']['right']['expression']['literal']['type'] not in ['boolean', 'Boolean']:
+                        exit_flag = True
+                        error("Expression is not a boolean")
+                    if operand['assigned_value']['expression']['binary_expression']['left']['expression']['literal']['type'] not in ['boolean', 'Boolean']:
+                        exit_flag = True
+                        error("Expression is not a boolean")
+                    print("here")
+             
+
+        except:
+            # too lazy to check if expression exists in the first place
+            pass
+
+
+        if exit_flag:
+            exit(1)
+
         assigned_value = ""
         if "assigned_value" not in operand:
             error(
                 f"ine:{operand['assignee']['line_num']}:{operand['assignee']['col_num']}: Could not find assigned value"
             )
+
+        try:
+            run_if = True
+            right_type =  operand['assigned_value']['expression']['literal']['type']
+        except:
+             try:
+                run_if = True
+                right_type = operand['assigned_value']['expression']['binary_expression']['right']['expression']['literal']['type']
+             except:
+                 run_if = False 
+                 
+
+        if(run_if):
+            try:    
+                left_type = variable_table[var_id_num]['type']
+            except:
+                run_if = False 
+        if(run_if and right_type == "Integer"):
+            right_type = "int"
+
+        if(run_if and right_type == "Boolean"):
+            right_type = "boolean"
+        if(run_if and right_type == "Float"):
+            right_type = "float"
+        if(run_if and right_type == "Dobule"):
+            right_type = "double"
+
+
+
+        if(run_if and left_type != right_type):
+            error(f"Line:{operand['assignee']['line_num']}:{operand['assignee']['col_num']}: Type mismatch: {left_type} and {right_type}")
 
         if "expression" in operand["assigned_value"]:
             assigned_value = self.create_expression_record(
@@ -605,6 +681,8 @@ class AST:
             )
         expression = ast_expression["expression"]
         output = ""
+        
+
         if "field_access" in expression:
             primary = self.evaluate_primary(
                 expression["field_access"], scope, scope_array
@@ -647,6 +725,11 @@ class AST:
             error(
                 f"Line:{ast_auto['line_num']}:{ast_auto['col_num']}: Could not find auto"
             )
+        for i in variable_table:
+            if variable_table[i]['id'] == ast_auto['auto']['operand']['field_access']['id']:
+                var_type = variable_table[i]['type']
+                if var_type not in ['int', 'float', 'double', 'Integer', 'Float', 'Double']:
+                    error("Cannot increment or decrement non-number")
         output = ""
         assigned_value = ""
         auto = ast_auto["auto"]
@@ -663,6 +746,8 @@ class AST:
 
     def evaluate_if_block(self, ast_if, scope, scope_array):
         output = ""
+        if ast_if['if']['condition']['expression']['binary_expression']['operator'] not in ['&&', '||', '==', '!=', '<', '<=', '>', '>=']:
+            error("Condition is not a boolean")
         if "if" not in ast_if:
             error(f"line:{ast_if['line_num']}:{ast_if['col_num']}: Could not find if")
         if_block = ast_if["if"]
@@ -677,6 +762,8 @@ class AST:
         condition = self.create_expression_record(
             if_block["condition"], scope, scope_array
         )
+
+
         block = self.create_block_record(if_block["if_block"], scope, scope_array)
         output += f"If({condition}, {block}"
         if "else_block" in if_block:
@@ -698,6 +785,7 @@ class AST:
             error(
                 f"Line:{while_block['line_num']}:{while_block['col_num']}: Could not find condition"
             )
+        
         if "while_block" not in while_block:
             error(
                 f"Line:{while_block['line_num']}:{while_block['col_num']}: Could not find block"
@@ -705,6 +793,8 @@ class AST:
         condition = self.create_expression_record(
             while_block["condition"], scope, scope_array
         )
+
+
         block = self.create_block_record(while_block["while_block"], scope, scope_array)
         if block[-1] == "\n":
             block = block[:-1]
@@ -713,6 +803,8 @@ class AST:
 
     def evaluate_for_block(self, ast_for, scope, scope_array):
         output = ""
+        if (ast_for['for']['condition']['expression']['binary_expression']['operator'] not in ['&&', '||', '==', '!=', '<', '<=', '>', '>=']):
+            error("Condition is not a boolean")
         if "for" not in ast_for:
             error(
                 f"Line:{ast_for['line_num']}:{ast_for['col_num']}: Could not find for"
@@ -749,6 +841,8 @@ class AST:
             if for_block["condition"] != None
             else "Skip()"
         )
+
+
         block = self.create_block_record(for_block["for_block"], scope, scope_array)
         output += f"For({init}, {condition}, {update}, {block})"
         return output
@@ -770,7 +864,7 @@ class AST:
         operator_to_string = {"-": "uminus", "!": "neg"}
         if unary_expression["operator"] == "+":
             return expression
-
+        
         operator = ""
         if unary_expression["operator"] in operator_to_string:
             operator = operator_to_string[unary_expression["operator"]]
@@ -824,11 +918,13 @@ class AST:
         if operator not in operator_to_string:
             error(f"Line{operator['line_num']}:{operator['col_num']}: Invalid operator")
 
-        operator = operator_to_string[operator]
+        if left_expression[0:7] == "Boolean" and (right_expression[0:6] == "Intege") or (right_expression[0:5] == "Float") or (right_expression[0:6] == "Dobule"):
+            error("Cannot operate Boolean and Number")
+
         output += f"Binary({operator}, {left_expression}, {right_expression})"
         return output
 
-    def evaluate_return(self, ast_return, scope, scope_array):
+    def evaluate_return(self, ast_return, scope, scope_array, return_type='void'):
         output = ""
         if "return" not in ast_return:
             error(
@@ -837,6 +933,8 @@ class AST:
         statement_eval = self.create_expression_record(
             ast_return["return"], scope, scope_array
         )
+        if(global_method_type == 'void'):
+            error("Cannot return value from void method")
         output += f"Return({statement_eval})"
         return output
 
@@ -932,6 +1030,7 @@ class AST:
                                 if searching_for in current_scope:
                                     current_scope = current_scope[searching_for]
                                 else:
+                                    
                                     error(
                                         f"Line:{ast_primary['line_num']}:{ast_primary['col_num']}: Could not find identifier in scope"
                                     )
@@ -1004,11 +1103,10 @@ class AST:
                     found = 0
                     for child in scope["global"][var_type]["children"]:
                         if ast_primary["id"] in child:
-                            warn(child[ast_primary["id"]])
                             found = 1
                     if found == 0:
                         error(
-                            f"Line:{ast_primary['line_num']}:{ast_primary['col_num']}: Could not find identifier in scope"
+                            f"Line:{ast_primary['line_num']}:{ast_primary['col_num']}: No field found"
                         )
                 else:
                     found = 0
@@ -1017,7 +1115,7 @@ class AST:
                             found = 1
                     if found == 0:
                         error(
-                            f"Line:{ast_primary['line_num']}:{ast_primary['col_num']}: Could not find identifier in scope"
+                            f"Line:{ast_primary['line_num']}:{ast_primary['col_num']}: No field found"
                         )
 
             if "this" == primary or "super" == primary:
@@ -1141,6 +1239,24 @@ class AST:
                         f"Line:{item[id_]['line_num']}:{item[id_]['col_num']} Variable already defined: {id_}"
                     )
         return scope
+    
+
+    
+def is_boolean_expression(expression):
+    allowed_operations = {'gt', 'lt', 'gte', 'lte', 'eq', 'leq', 'neq', 'and', 'or', 'neg'}
+    parts = expression.split(',')
+    if len(parts) > 0:
+        operation = parts[0].split('(')[-1].strip()
+
+        # Check if the operation is in the allowed set
+        if operation in allowed_operations:
+            return True
+
+    return False
+
+
+
+    
 
 
 def readJSON(filename):
@@ -1240,3 +1356,18 @@ def compare_var(obj1, obj2):
             return False
 
     return True
+
+def collect_literal_types(expression, types):
+    if 'literal' in expression:
+        types.add(expression['literal']['type'])
+    else:
+        # Recursively explore all other keys that might lead to nested expressions
+        for key, value in expression.items():
+            print(key, value)
+            if isinstance(value, dict):
+                collect_literal_types(value, types)
+
+def has_single_type(expression):
+    types = set()
+    collect_literal_types(expression, types)
+    return len(types) == 1

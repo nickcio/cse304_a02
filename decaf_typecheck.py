@@ -53,6 +53,8 @@ def is_boolean_type(var_type, scope):
         return True
     return is_subtype(scope, var_type, "Boolean")
 
+
+
 def resolve_boolean_expression(expression):
     # Assuming expression is a dictionary that contains an 'operator' key.
     operator = expression.get('operator')
