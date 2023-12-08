@@ -1,34 +1,16 @@
-class A {
-  int x;
-  A() {
-    this.x = 0;
-  }
-  int funct() {
-    return this.x;
-  }
+class rfib{
+    static int fib(int n) {
+        if (n <= 2)
+            return 1;
+        else
+            return rfib.fib(n-1) + rfib.fib(n-2);
+    }
 
-  public int g() {
-    int i,j;
-    i = this.funct();
-    i++;
-    Out.print(i);
-    return i;
-  }
-}
-class B extends A {
-  int y;
-  public A avar;
-  B(){
-    this.y = 2;
-    if (this.y == 2) {
-      this.y = 3;
+    public static void main() {
+        int n, r;
+
+        n = 5;
+
+        r = rfib.fib(n);
     }
-    else {
-      this.y = 4;
-    }
-    this.avar = new A();
-  }
-  public int funct(int k) {
-    return super.funct() + k;
-  }
 }
