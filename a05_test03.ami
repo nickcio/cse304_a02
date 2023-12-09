@@ -1,0 +1,22 @@
+.static_data 1
+
+a05_test03:
+
+# METHOD: main
+M_main_6:
+move_immed_i t3, 10
+move t2 t3
+move_immed_i t3, 20
+move t2 t3
+move_immed_i t3, 0
+move t2 t3
+flt t3, t1, t2
+bnz t3, else_0
+fadd t4, t0, t0
+jmp endif_0
+else_0:
+
+endif_0:
+move a0, a0
+ret
+# END METHOD: main

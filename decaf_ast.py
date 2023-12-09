@@ -20,11 +20,15 @@ while_count = 0
 for_count = 0
 constructor_count = 0
 static_count = 0
+bin_count = 0
+label_count = 0
 typet = {
     "int": "4",
     "float": "4",
     "boolean": "1"
 }
+
+allregs = dict()
 
 variable_table = defaultdict(dict)
 
@@ -423,14 +427,14 @@ class AST:
             local_scope = self.traverse_scope_layer(
                 local_scope, [method_name, "children"]
             )
-            formal_scope = self.traverse_scope_layer(
-                local_scope, [method_name]
-            )
+            #formal_scope = self.traverse_scope_layer(
+            #    local_scope, [method_name]
+            #)
             local_scope_array.append(method_name)
             local_scope_array.append("children")
 
             formaltypes = []
-            numparams = []
+            numparams = 0
             for variable_id in method["formals"].keys():
                 variable = method["formals"][variable_id]
                 formaltypes.append(variable["type"])
@@ -454,7 +458,7 @@ class AST:
                 self.asmbdata[f'PARAMETER_{variable_id}'] = 'a' + str(numparams)
                 numparams+=1
 
-            formal_scope['signature'] = decaftype.create_type_sig(method_name, formaltypes)
+            #formal_scope['signature'] = decaftype.create_type_sig(method_name, formaltypes)
 
             block = self.create_block_record(
                 method["body"], local_scope, local_scope_array
@@ -625,6 +629,7 @@ class AST:
             )
             output += self.create_variable_record(var, variable_declaration[var])
             self.asmbdata[f'VARIABLE_{var}'] = self.asmbregs.pop(0)
+            allregs[var_id] = self.asmbdata[f'VARIABLE_{var}']
             self.asmbstack.insert(0, self.asmbdata[f"VARIABLE_{var}"])
 
         return ""
@@ -753,16 +758,27 @@ class AST:
             output += expression
 
         reg = self.asmbstack.pop(0)
+        Err = False
         if "field_" in var_type:
             assignee_reg = self.asmbstack.pop(0)
             self.asm += codegen.generatemove(assignee_reg, reg)
         else:
-            assignee_reg = self.asmbdata[f'FIELD_{var_id_num}']
-            self.asm += codegen.generatehstore(reg, assignee_reg)
+            try:
+                assignee_reg = self.asmbdata[f'FIELD_{var_id_num}']
+                self.asm += codegen.generatehstore(reg, assignee_reg)
+            except:
+                try:
+                    assignee_reg = self.asmbstack.pop(0)
+                    self.asm += codegen.generatemove(assignee_reg, reg)
+                except:
+                    Err = True
+                    pass
 
-        self.asmbregs.insert(0, reg)
-
-        self.asmbstack.insert(0, assignee_reg)
+        if not Err:
+            self.asmbregs.insert(0, reg)
+            self.asmbstack.insert(0, assignee_reg)
+        else:
+            self.asmbstack.insert(0, reg)
 
         return output
 
@@ -1022,6 +1038,8 @@ class AST:
         output += f"Unary({expression}, {operator})"
 
         reg = self.asmbstack.pop(0)
+        self.asm+=codegen.generateneg(reg,self.asmbregs)
+        self.asmbstack.insert(0,reg)
         #if decaftype.is_number_type(exp)
 
         return output
@@ -1053,6 +1071,18 @@ class AST:
             binary_expression["right"], scope, scope_array
         )
         operator = binary_expression["operator"]
+        
+
+        try:
+            r_reg = self.asmbstack.pop(0)
+        except:
+            rvarid = binary_expression['right']['expression']['field_access']['id']
+            r_reg = allregs[rvarid]
+        try:
+            l_reg = self.asmbstack.pop(0)
+        except:
+            lvarid = binary_expression['left']['expression']['field_access']['id']
+            l_reg = allregs[lvarid]
 
         operator_to_string = {
             "+": "add",
@@ -1077,6 +1107,14 @@ class AST:
             error("Cannot operate Boolean and Number")
 
         output += f"Binary({operator}, {left_expression}, {right_expression})"
+        global label_count
+        asmout, self.asmbregs, regout = codegen.generatebinexpr(ast_binary, label_count, self.asmbdata, l_reg, r_reg, self.asmbregs, "float")
+        label_count+=1
+        self.asmbstack.insert(0, regout)
+        global bin_count
+        self.asmbdata[f'BINARY_EXPRESSION_{bin_count}'] = regout
+        self.asm+=asmout
+
         return output
 
     def evaluate_return(self, ast_return, scope, scope_array, return_type='void'):
@@ -1462,6 +1500,7 @@ def readJSON(filename):
 
 def writeAST(ast_blocks):
     output = "-----------------------------------------------\n"
+    asmout = ""
     for ast in ast_blocks:
         if ast == None:
             continue

@@ -1,0 +1,31 @@
+.static_data 1
+
+nrfib:
+
+# METHOD: main
+M_main_6:
+move_immed_i t4, 5
+move t3 t4
+move_immed_i t4, 1
+move t3 t4
+move_immed_i t4, 0
+move t3 t4
+move_immed_i t4, 1
+move t3 t4
+
+# for expression 14:6
+for_0
+flt t4, t1, t2
+bz t4, endfor_0
+move_immed_i t5, 1
+fadd t6, t3, t5
+move t0 t6
+move t3 t0
+fadd t6, t3, t0
+fsub t7, t2, t6
+jmp for_0
+
+endfor_0:
+move a0, a0
+ret
+# END METHOD: main

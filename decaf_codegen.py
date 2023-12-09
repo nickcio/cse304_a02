@@ -84,7 +84,6 @@ def generateneg(register, registers: list()):
     reg = registers.pop(0)
     out += f"move_immediate_i {reg}, -1\n"
     out += f'imul {register}, {register}, {reg}\n'
-    out += f'# free {reg}'
     return out
 
 def getvreg(var_id, asm_data):
@@ -170,7 +169,7 @@ def generatebitflip(register, registers: list(), Lnum):
     out += f"L_{Lnum}_E:\n"
     return out
 
-def generateforfooter(count):
+def generateforfoot(count):
     return generatelabel(f'endfor_{count}')
 
 def generateiffooter(count):

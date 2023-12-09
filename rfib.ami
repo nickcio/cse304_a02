@@ -1,0 +1,32 @@
+.static_data 2
+
+rfib:
+
+# METHOD: fib
+M_fib_6:
+# a0: n
+move_immed_i t0, 2
+bnz t0, else_0
+move_immed_i t1, 1
+move a0, t1
+ret
+jmp endif_0
+else_0:
+move_immed_i t2, 1
+move_immed_i t3, 2
+move a0, t2
+ret
+
+endif_0:
+move a0, a0
+ret
+# END METHOD: fib
+
+# METHOD: main
+M_main_7:
+move_immed_i t6, 5
+move t5 t6
+move t4 t5
+move a0, a0
+ret
+# END METHOD: main
