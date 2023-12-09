@@ -1,6 +1,12 @@
 # Nicholas Ciotoli 113325368 nciotoli
 # Adam Lipson 114339915 alipson
 
+def error(string):
+    RED = "\033[91m"
+    CLEAR_COLOR = "\033[0m"
+    print(f"{RED}ERROR:{CLEAR_COLOR} {string}", file=sys.stderr)
+    exit(1)
+
 def generateprog(astprog):
     return ""
   
@@ -82,83 +88,135 @@ def generateneg(register, registers: list()):
     return out
 
 def getvreg(var_id, asm_data):
-  pass
+    if var_id in asm_data: return asm_data[var_id]
+    else: return "None"
 
 def generatebinexpr(ast_binary, Lnum, data, register_left, register_right, registers: list(), _type="int"):
   
-  int_ops = {
-    "+": "iadd",
-    "-": "isub",
-    "*": "imul",
-    "/": "idiv",
-    "%": "imod",
-    "&&": "and",
-    "||": "or",
-    "==": "eq",
-    "!=": "neq",
-    "<": "ilt",
-    ">": "igt",
-    "<=": "ileq",
-    ">=": "igeq"
-  }
+    int_ops = {
+        "+": "iadd",
+        "-": "isub",
+        "*": "imul",
+        "/": "idiv",
+        "%": "imod",
+        "&&": "and",
+        "||": "or",
+        "==": "eq",
+        "!=": "neq",
+        "<": "ilt",
+        ">": "igt",
+        "<=": "ileq",
+        ">=": "igeq"
+    }
   
-  float_ops = {
-    "+": "fadd",
-    "-": "fsub",
-    "*": "fmul",
-    "/": "fdiv",
-    "%": "fmod",
-    "&&": "and",
-    "||": "or",
-    "==": "eq",
-    "!=": "neq",
-    "<": "flt",
-    ">": "fgt",
-    "<=": "fleq",
-    ">=": "fgeq"
-  }
+    float_ops = {
+        "+": "fadd",
+        "-": "fsub",
+        "*": "fmul",
+        "/": "fdiv",
+        "%": "fmod",
+        "&&": "and",
+        "||": "or",
+        "==": "eq",
+        "!=": "neq",
+        "<": "flt",
+        ">": "fgt",
+        "<=": "fleq",
+        ">=": "fgeq"
+    }
   
-  if _type == "float":
-    return generatebinexprtype(ast_binary, Lnum, data, register_left, register_right, registers, float_ops)
-  else:
-    return generatebinexprtype(ast_binary, Lnum, data, register_left, register_right, registers, int_ops)
+    if _type == "float":
+        return generatebinexprtype(ast_binary, Lnum, data, register_left, register_right, registers, float_ops)
+    else:
+        return generatebinexprtype(ast_binary, Lnum, data, register_left, register_right, registers, int_ops)
 
-
-def generatebinexprtype(ast_binary, Lnum, data, register_left, register_right, registers: list(), operator_to_string):
-  pass
+def generatebinexprtype(ast_binary, Lnum, data, register_left, register_right, registers: list(), operatorstr):
+    if "binary_expression" not in ast_binary:
+        error(f'ERROR: Could not find binary expression')
+    binexpr = ast_binary["binary_expression"]
+    out = ""
+    if "left" not in binexpr: error(f"Line{binexpr['line_num']}:{binexpr['col_num']}: Could not find left operand")
+    if "right" not in binexpr: error(f"Line{binexpr['line_num']}:{binexpr['col_num']}: Could not find right operand")
+    if "operator" not in binexpr: error(f"Line{binexpr['line_num']}:{binexpr['col_num']}: Could not find operator")
+    operator = binexpr['operator']
+    if operator not in operatorstr: error(f"Line{operator['line_num']}:{operator['col_num']}: Invalid operator")
+    operator = operatorstr[operator]
+    regout = registers.pop(0)
+    if operator == "eq":
+        out += f"beq {register_left}, {register_right}, L_{Lnum}_TRUE\n"
+        out += f"move_immed_i {regout}, 0\n"
+        out += f"jmp L_{Lnum}_E\n"
+        out += f"L_{Lnum}_T:\n"
+        out += f"move_immed_i {regout}, 1\n"
+        out += f"L_{Lnum}_E:\n"  
+    elif operator == "neq":
+        out += f"beq {register_left}, {register_right}, L_{Lnum}_TRUE\n"
+        out += f"move_immed_i {regout}, 1\n"
+        out += f"jmp L_{Lnum}_E\n"
+        out += f"L_{Lnum}_T:\n"
+        out += f"move_immed_i {regout}, 0\n"
+        out += f"L_{Lnum}_E:\n"
+    out += f'{operator} {regout}, {register_left}, {register_right}\n' 
+    return out, registers, regout
 
 def generatebitflip(register, registers: list(), Lnum):
-  pass
+    reg = registers.pop(0)
+    out = f"move_immed_i {reg}, 1\n"
+    out += f"beq {reg}, {register}, L_{Lnum}_TRUE\n"
+    out += f"move_immed_i {register}, 1\n"
+    out += f"jmp L_{Lnum}_E\n"
+    out += f"L_{Lnum}_T:\n"
+    out += f"move_immed_i {register}, 0\n"
+    out += f"L_{Lnum}_E:\n"
+    return out
 
 def generateforfooter(count):
-  pass
+    return generatelabel(f'endfor_{count}')
 
 def generateiffooter(count):
-  pass
+    return generatelabel(f'endif_{count}')
 
 def generatemove(reg1,reg2):
-  pass
+    return f'move {reg1} {reg2}\n'
 
 def generatejump(label):
-  pass
+    return f'jmp {label}\n'
 
 def generatereturn(register):
-  pass
+    return f'move a0, {register}\nret\n'
 
 def generateauto(ast_auto, register, _type, registers: list()):
-  pass
+    if "auto" not in ast_auto: error(f"Line{ast_auto['line_num']}:{ast_auto['col_num']}: Could not find auto")
+    auto = ast_auto["auto"]
+
+    reg = registers.pop(0)
+    out = f'move_immediate_i {reg},'
+    value = ""
+    if "postfix" in auto: value = auto['postfix']      
+    elif "prefix" in auto: value = auto['prefix']
+    else: error(f"Line{auto['line_num']}:{auto['col_num']}: Could not find prefix or postfix")
+    if "inc" in value: out += "1\n"
+    elif "dec" in value: out += "-1\n"
+    else: error(f"Line{auto['line_num']}:{auto['col_num']}: Invalid postfix or prefix")
+
+    if _type == "float":
+        out += f'ftoi {reg}, {reg}\n'
+        out += f'fadd {register}, {register}, {reg}\n'
+    else:
+        out += f'iadd {register}, {register}, {reg}\n'
+    return out, register
 
 def generateifhead(ast_if, register, count):
-  pass
+    return f'bnz {register}, else_{count}\n'
 
 def generateelsehead(ast_if, count):
-  pass
+    return f'jmp endif_{count}\nelse_{count}:\n'
 
 def generatewhilehead(ast_while, count):
-  pass
+    return f'while_{count}:'
 
 def generatewhilecond(register, count):
-  pass
+    return f'bz {register}, endwhile_{count}\n'
 
 def generatewhilefoot(count):
-  pass
+    return f'jmp while_{count}\nendwhile{count}:\n'

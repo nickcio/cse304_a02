@@ -1,8 +1,6 @@
 # Nicholas Ciotoli 113325368 nciotoli
 # Adam Lipson 114339915 alipson
 
-from decaf_ast import valid_types
-
 type_hierarchy = {
     "Integer": "Number",
     "Float": "Number",

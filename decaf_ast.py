@@ -160,7 +160,7 @@ class AST:
         self.fields = fields
         self.methods = methods
         self.constructors = constructors
-        self.asmb = ""
+        self.asm = ""
         self.asmbdata = {}
         self.asmbregs = ["t0","t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11", "t12", "t13", "t14", "t15", "t16", "t17", "t18", "t19", "t20", "t21", "t22", "t23", "t24", "t25", "t26", "t27", "t28", "t29"]
         self.asmbstack = []
@@ -293,7 +293,7 @@ class AST:
             output += f"FIELD {field_id}, {field_name}, {self.class_name}, {field_modifiers}, {field_type}\n"
             fieldsize = self.getsize(field_type)
             self.size += int(fieldsize)
-            asmout, self.asmbregs, self.asmbdata = codegen.generatefield({"name": field_name,"field_id": field_id, 'line_num': field['line_num'], 'col_num': field['col_num']}, fieldsize, self.asmbdata, self.asmbreg)
+            asmout, self.asmbregs, self.asmbdata = codegen.generatefield({"name": field_name,"field_id": field_id, 'line_num': field['line_num'], 'col_num': field['col_num']}, fieldsize, self.asmbdata, self.asmbregs)
             self.asm += asmout
         return output
 
@@ -1465,7 +1465,7 @@ def writeAST(ast_blocks):
     for ast in ast_blocks:
         if ast == None:
             continue
-        out, asm += ast.print_ast()
+        out, asm = ast.print_ast()
         output+=out
         asmout+=asm
         output += "-----------------------------------------------\n"

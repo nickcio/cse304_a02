@@ -9,7 +9,7 @@ from decaf_ast import *
 import decaf_lexer
 import decaf_parser
 import decaf_ast
-
+import decaf_absmc as absmc
 
 def just_scan(fn=""):
    # print("Scanning...")
@@ -43,9 +43,10 @@ def just_parse(fn=""):
     source = fh.read()
     fh.close()
     result = parser.parse(source, lexer = lexer, debug = 0)
-    ast = decaf_ast.writeAST(result)
+    ast, asm = decaf_ast.writeAST(result)
     # Parsing Successful
     print(ast)
+    absmc.write_asm(fn, asm)
 
 def main():
     fn = sys.argv[1] if len(sys.argv) > 1 else ""
