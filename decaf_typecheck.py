@@ -71,4 +71,12 @@ def resolve_arithmetic_expression(expression):
     return resolve_arithmetic_operator(operator)
 
 
+def create_type_sig(name, args, return_type='void', id=None):
+  signature = {
+      "name": name,
+      "id": id,
+      "return_type": return_type,
+      "args": args
+  }
+  return signature
 

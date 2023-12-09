@@ -4,6 +4,8 @@
 import json, sys
 from collections import defaultdict 
 import re
+import decaf_codegen as codegen
+import decaf_typecheck as decaftype
 
 field_count = 1
 method_count = 6
@@ -13,6 +15,16 @@ var_count = 1
 valid_types = ["int", "boolean", "string", "float", "double", "char", "void", "error", "null"]
 user_defined_types = []
 global_method_type = " "
+if_count = 0
+while_count = 0
+for_count = 0
+constructor_count = 0
+static_count = 0
+typet = {
+    "int": "4",
+    "float": "4",
+    "boolean": "1"
+}
 
 variable_table = defaultdict(dict)
 
@@ -148,18 +160,24 @@ class AST:
         self.fields = fields
         self.methods = methods
         self.constructors = constructors
+        self.asmb = ""
+        self.asmbdata = {}
+        self.asmbregs = ["t0","t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11", "t12", "t13", "t14", "t15", "t16", "t17", "t18", "t19", "t20", "t21", "t22", "t23", "t24", "t25", "t26", "t27", "t28", "t29"]
+        self.asmbstack = []
+        self.size = 0
 
         if "class_name" not in ast:
             error("Could not find class name")
         if ast["class_name"] == "":
             error("Class name is empty")
         self.class_name = ast["class_name"]
-
+        self.asmbdata["class_name"] = ast["class_name"]
+        self.asm += codegen.generatelabel(self.class_name)
         if "superclass" not in ast:
             error("Could not find superclass name")
         self.superclass_name = ast["superclass"]
 
-        global scope
+        global scope, typetab
         if self.class_name in scope["global"]:
             error(
                 f"Line:{ast['line_num']}:{ast['col_num']}: Class name already defined"
@@ -191,12 +209,19 @@ class AST:
                 "col_num": ast["col_num"],
             },
         )
-
+        typet[self.class_name] = str(self.size)
         self.printed = self.create_record(self.ast, self.scope[self.class_name])
         scope["global"] = self.scope
 
     def print_ast(self):
-        return self.printed
+        return self.printed, self.asm
+
+    def getsize(self, type):
+        if type in typet:
+            return typet[type]
+        error(
+            f'ERROR: TYPE {type} NOT IN TYPE TABLE'
+        )
 
     def create_record(self, ast, scope):
         output = ""
@@ -232,7 +257,7 @@ class AST:
 
     def create_field_record(self, scope, scope_array):
         output = "Fields:\n"
-        blacklist = []
+
         for field_id in self.fields.keys():
             field = self.fields[field_id]
 
@@ -266,6 +291,10 @@ class AST:
             self.add_to_scope(scope, scope_array, field_name, var_object)
 
             output += f"FIELD {field_id}, {field_name}, {self.class_name}, {field_modifiers}, {field_type}\n"
+            fieldsize = self.getsize(field_type)
+            self.size += int(fieldsize)
+            asmout, self.asmbregs, self.asmbdata = codegen.generatefield({"name": field_name,"field_id": field_id, 'line_num': field['line_num'], 'col_num': field['col_num']}, fieldsize, self.asmbdata, self.asmbreg)
+            self.asm += asmout
         return output
 
     def create_constructor_record(self, scope, scope_array):
@@ -299,6 +328,7 @@ class AST:
                     "children": [],
                     "line_num": constructor["line_num"],
                     "col_num": constructor["col_num"],
+                    "signature": decaftype.create_type_sig(self.class_name, [], id=constructor_id)
                 },
             )
             local_scope = self.traverse_scope_layer(
@@ -307,9 +337,20 @@ class AST:
             local_scope_array.append(constructor_id)
             local_scope_array.append("children")
 
+            formal_scope = self.traverse_scope_layer(
+                local_scope, [constructor_id]
+            )
+
+            self.asm += codegen.generatecommlabel(f"C_{constructor_id}", f"CONSTRUCTOR: {constructor_id}")
+            self.asmbdata[f'C_{constructor_id}'] = {}
+
             output += "Variable Table:\n"
+            formaltypes = []
+            numparams = 0
+            localstack = []
             for variable_id in constructor["formals"].keys():
                 variable = constructor["formals"][variable_id]
+                formaltypes.append(variable["type"])
                 self.add_to_scope(
                     local_scope,
                     local_scope_array,
@@ -326,11 +367,20 @@ class AST:
                     },
                 )
                 output += self.create_variable_record(variable_id, variable)
+                self.asm += codegen.generatecomm(f"a{numparams}: {variable['id']}")
+                self.asmbdata[f'PARAMETER_{variable_id}'] = 'a' + str(numparams)
 
+                localstack.insert(0,f'a{numparams}')
+                numparams+=1
+            localstack = localstack[::-1]
+            for reg in localstack:
+                self.asmbregs.insert(0,reg)
+            formal_scope['signature'] = decaftype.create_type_sig(self.class_name, formaltypes)
             block = self.create_block_record(
                 constructor["body"], local_scope, local_scope_array
             )
-
+            self.asm += codegen.generatereturn("a0")
+            self.asm += codegen.generatecomm(f"END CONSTRUCTOR: C_{constructor_id}")
             output += "Constructor Body:\n"
             output += block
         return output
@@ -348,7 +398,8 @@ class AST:
 
 
             global_method_type = method_type
-        
+            self.asm += codegen.generatecommlabel(f'M_{method_name}_{method_id}', f'METHOD: {method_name}')
+            self.asmbdata[f'M_{method_name}_{method_id}'] = {}
 
             output += f"METHOD: {method_id}, {method_name}, {self.class_name}, {method_modifiers}, {method_type}\n"
             output += "Method Parameters:\n"
@@ -372,11 +423,17 @@ class AST:
             local_scope = self.traverse_scope_layer(
                 local_scope, [method_name, "children"]
             )
+            formal_scope = self.traverse_scope_layer(
+                local_scope, [method_name]
+            )
             local_scope_array.append(method_name)
             local_scope_array.append("children")
 
+            formaltypes = []
+            numparams = []
             for variable_id in method["formals"].keys():
                 variable = method["formals"][variable_id]
+                formaltypes.append(variable["type"])
                 self.add_to_scope(
                     local_scope,
                     local_scope_array,
@@ -393,6 +450,11 @@ class AST:
                     },
                 )
                 output += self.create_variable_record(variable_id, variable)
+                self.asm += codegen.generatecomm(f'a{numparams}: {variable["id"]}')
+                self.asmbdata[f'PARAMETER_{variable_id}'] = 'a' + str(numparams)
+                numparams+=1
+
+            formal_scope['signature'] = decaftype.create_type_sig(method_name, formaltypes)
 
             block = self.create_block_record(
                 method["body"], local_scope, local_scope_array
@@ -409,6 +471,10 @@ class AST:
 
             output += "Method Body:\n"
             output += block
+            self.asm += codegen.generatereturn("a0")
+            self.asm += codegen.generatecomm(f'END METHOD: {method_name}')
+            if len(self.asmbstack) > 0:
+                self.asmbstack.pop(0)
         return output
 
     def create_block_record(self, ast_block, scope, scope_array):
@@ -457,6 +523,9 @@ class AST:
 
     def create_modifiers_list(self, ast_modifiers):
         output = "private"
+        if "static" in ast_modifiers:
+            global static_count
+            static_count+=1
         if ast_modifiers == []:
             output = "private, instance"
         elif ast_modifiers == ["public"]:
@@ -471,6 +540,9 @@ class AST:
 
     def create_modifiers_list_PRIVATE_PUBLIC(self, ast_modifiers):
         output = ""
+        if "static" in ast_modifiers:
+            global static_count
+            static_count+=1
         if ast_modifiers == []:
             output = "private"
         elif "private" in ast_modifiers:
@@ -552,6 +624,8 @@ class AST:
                 },
             )
             output += self.create_variable_record(var, variable_declaration[var])
+            self.asmbdata[f'VARIABLE_{var}'] = self.asmbregs.pop(0)
+            self.asmbstack.insert(0, self.asmbdata[f"VARIABLE_{var}"])
 
         return ""
 
@@ -574,11 +648,17 @@ class AST:
         )
 
         expr_type = "Assign"
+        assignee_type = var_type
         var_scope_type = "Variable"
         if "field_" in var_type:
             var_scope_type = "Field-access"
 
         assignee = f"{var_id_num}"
+        
+        if "field_access" in operand["assignee"] and var_scope_type == "Field_access":
+            assignee_primary = self.evaluate_primary(operand['assignee']['field_access'],scope,scope_array)
+            assignee_type = assignee_primary[1]
+            var_scope_type += f'{assignee_primary[0]}'
 
         exit_flag = False
         if 'unary_expression' in operand.get('assigned_value', {}).get('expression', {}):
@@ -672,6 +752,18 @@ class AST:
         else:
             output += expression
 
+        reg = self.asmbstack.pop(0)
+        if "field_" in var_type:
+            assignee_reg = self.asmbstack.pop(0)
+            self.asm += codegen.generatemove(assignee_reg, reg)
+        else:
+            assignee_reg = self.asmbdata[f'FIELD_{var_id_num}']
+            self.asm += codegen.generatehstore(reg, assignee_reg)
+
+        self.asmbregs.insert(0, reg)
+
+        self.asmbstack.insert(0, assignee_reg)
+
         return output
 
     def create_expression_record(self, ast_expression, scope, scope_array):
@@ -742,6 +834,24 @@ class AST:
         elif "prefix" in auto:
             assigned_value = f"Variable({var_id}), {auto['prefix']}, pre"
         output += f"Auto({assigned_value})"
+
+        stmt_type = var_type
+
+        if "field_" in var_type:
+            field_reg = self.asmbdata[f'FIELD_{var_id}']
+            regout, reg = codegen.generategetfieldval(field_reg, self.asmbregs)
+            self.asm += regout
+            asmout, reg = codegen.generateauto(ast_auto,reg,stmt_type,self.asmbregs)
+            self.asm += asmout
+            self.asm += codegen.generatehstore(reg,field_reg)
+            self.asmbregs.insert(0,reg)
+            self.asmbstack.append(field_reg)
+        else:
+            reg = self.asmbstack.pop(0)
+            asmout, reg = codegen.generateauto(ast_auto,reg,stmt_type,self.asmbregs)
+            self.asm += asmout
+            self.asmbstack.append(reg)
+
         return output
 
     def evaluate_if_block(self, ast_if, scope, scope_array):
@@ -763,8 +873,16 @@ class AST:
             if_block["condition"], scope, scope_array
         )
 
+        reg = self.asmbstack.pop(0)
+        global if_count
+        if_header = codegen.generateifhead(ast_if['if'],reg,if_count)
+        self.asm += if_header
 
         block = self.create_block_record(if_block["if_block"], scope, scope_array)
+        
+        else_header = codegen.generateelsehead(ast_if['if'], if_count)
+        self.asm += else_header
+        
         output += f"If({condition}, {block}"
         if "else_block" in if_block:
             output += ", "
@@ -772,6 +890,10 @@ class AST:
                 if_block["else_block"], scope, scope_array
             )
         output += ")"
+
+        self.asm += codegen.generateiffooter(if_count)
+        if_count+=1
+
         return output
 
     def evaluate_while_block(self, ast_while, scope, scope_array):
@@ -790,12 +912,21 @@ class AST:
             error(
                 f"Line:{while_block['line_num']}:{while_block['col_num']}: Could not find block"
             )
+
+        global while_count
+        self.asm += codegen.generatewhilehead(ast_while['while'], while_count)
+
         condition = self.create_expression_record(
             while_block["condition"], scope, scope_array
         )
 
+        reg = self.asmbstack.pop(0)
+        self.asm+=codegen.generatewhilecond(reg,while_count)
 
         block = self.create_block_record(while_block["while_block"], scope, scope_array)
+        
+        self.asm+=codegen.generatewhilefoot(while_count)
+        while_count+=1
         if block[-1] == "\n":
             block = block[:-1]
         output += f"While({condition}, {block})"
@@ -831,19 +962,39 @@ class AST:
             if for_block["init"] != None
             else "Skip()"
         )
-        update = (
-            self.create_expression_record(for_block["update"], scope, scope_array)
-            if for_block["update"] != None
-            else "Skip()"
-        )
+
+        initreg = self.asmbstack.pop(0)
+        global for_count
+        self.asm+=codegen.generateforhead(ast_for['for'],for_count)
+
         condition = (
             self.create_expression_record(for_block["condition"], scope, scope_array)
             if for_block["condition"] != None
             else "Skip()"
         )
 
+        conditionreg = self.asmbstack.pop(0)
+        self.asm+=codegen.generateforcond(ast_for['for'],for_count,conditionreg)
+
+        self.asmbstack.insert(0,initreg)
+
+        update = (
+            self.create_expression_record(for_block["update"], scope, scope_array)
+            if for_block["update"] != None
+            else "Skip()"
+        )
+
+        updatereg = self.asmbstack.pop(0)
+        if updatereg != initreg:
+            self.asm+=codegen.generatemove(initreg,updatereg)
+            self.asmbstack.insert(0,updatereg)
 
         block = self.create_block_record(for_block["for_block"], scope, scope_array)
+       
+        self.asm+=codegen.generatejump(f'for_{for_count}')
+        self.asm+=codegen.generateforfoot(for_count)
+        for_count+=1
+       
         output += f"For({init}, {condition}, {update}, {block})"
         return output
 
@@ -869,6 +1020,10 @@ class AST:
         if unary_expression["operator"] in operator_to_string:
             operator = operator_to_string[unary_expression["operator"]]
         output += f"Unary({expression}, {operator})"
+
+        reg = self.asmbstack.pop(0)
+        #if decaftype.is_number_type(exp)
+
         return output
 
     def evaluate_binary_expression(self, ast_binary, scope, scope_array):
@@ -936,6 +1091,8 @@ class AST:
         if(global_method_type == 'void'):
             error("Cannot return value from void method")
         output += f"Return({statement_eval})"
+        regout = self.asmbstack.pop()
+        self.asm+=codegen.generatereturn(regout)
         return output
 
     def evaluate_method_invo(self, ast_method_invo, scope, scope_array):
@@ -963,7 +1120,11 @@ class AST:
         for arg in arguments:
             arg_str.append(self.create_expression_record(arg, scope, scope_array))
         arg_str = ", ".join(arg_str)
-        output += f"Method-call({self.evaluate_primary(method,scope,scope_array)}, [{arg_str}])"
+        primary = self.evaluate_primary(method,scope,scope_array)
+        output += f"Method-call({primary}, [{arg_str}])"
+        #method_label = f"M_{method_info['signature']['name']}_{method_info['id_num']}"
+        #self.asm+=codegen.generatemethodcall(method_label)
+
         return output
 
     def evaluate_literal(self, ast_literal):
@@ -980,17 +1141,51 @@ class AST:
             output += f"Constant({ast_literal['value']})"
         else:
             output += f"{ast_literal['type']}-Constant({ast_literal['value']})"
+        
+        val = -1
+        isfloat = False
+        if ast_literal['type'] == "Integer":
+            val = ast_literal['value']
+        elif ast_literal['type'] == "Float":
+            isfloat = True
+            val = ast_literal['value']
+        elif ast_literal['type'] == "Boolean":
+            if ast_literal['value'] == 'false': val = 0
+            else: val = 1
+        asmout,regout = codegen.generateliteral(val,self.asmbregs,isfloat)
+        self.asmbstack.insert(0,regout)
+        self.asm+=asmout
+
         return output
 
     def evaluate_new_object(self, ast_new_object, scope, scope_array):
         output = ""
         arguments = ast_new_object["arguments"]
         arg_str = []
+        arg_types = []
         for arg in arguments:
             arg_str.append(self.create_expression_record(arg, scope, scope_array))
+            #arg_types.append(arg_type)
+            arg_types.append("int")
         arg_str = ", ".join(arg_str)
 
+
+
         output += f"New-object({ast_new_object['type']}, [{arg_str}])"
+        
+        objsig = decaftype.create_type_sig(ast_new_object['type'],arg_types)
+        regs = []
+        global typet
+        size = typet[objsig['name']]
+        for i in range(len(arg_types)-1,-1,-1):
+            reg = f'a{i}'
+            self.asm+=codegen.generatemove(reg,self.asmbstack.pop(0))
+            regs.append(reg)
+
+        global constructor_count
+        self.asm+=codegen.generateinit(regs,self.asmbregs,size)
+        constructor_count += 1
+
         return output
 
     def evaluate_primary(self, ast_primary, local_scope, scope_array):
@@ -1270,9 +1465,13 @@ def writeAST(ast_blocks):
     for ast in ast_blocks:
         if ast == None:
             continue
-        output += ast.print_ast()
+        out, asm += ast.print_ast()
+        output+=out
+        asmout+=asm
         output += "-----------------------------------------------\n"
-    return output
+    global static_count
+    asmout = f'.static_data {static_count}\n{asmout}'
+    return output, asmout
 
 
 def extract_body(ast):
