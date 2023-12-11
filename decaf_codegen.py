@@ -59,7 +59,7 @@ def generateliteral(value, registers: list(), isfloat=False):
     return out, reg
 
 def generateforhead(ast_for, count):
-    return f"\n# for expression {ast_for['line_num']}:{ast_for['col_num']}\nfor_{count}\n"
+    return f"\n# for expression {ast_for['line_num']}:{ast_for['col_num']}\nfor_{count}:\n"
 
 def generateforcond(ast_for, count, register1):
     return f'bz {register1}, endfor_{count}\n'

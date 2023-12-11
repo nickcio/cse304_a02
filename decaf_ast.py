@@ -166,7 +166,7 @@ class AST:
         self.constructors = constructors
         self.asm = ""
         self.asmbdata = {}
-        self.asmbregs = ["t0","t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11", "t12", "t13", "t14", "t15", "t16", "t17", "t18", "t19", "t20", "t21", "t22", "t23", "t24", "t25", "t26", "t27", "t28", "t29"]
+        self.asmbregs = [f't{i}' for i in range(0,100)]
         self.asmbstack = []
         self.size = 0
 
@@ -629,6 +629,7 @@ class AST:
             )
             output += self.create_variable_record(var, variable_declaration[var])
             self.asmbdata[f'VARIABLE_{var}'] = self.asmbregs.pop(0)
+            #self.asm += codegen.generatecomm(f'create var {var} with register {self.asmbdata[f"VARIABLE_{var}"]}')
             allregs[var_id] = self.asmbdata[f'VARIABLE_{var}']
             self.asmbstack.insert(0, self.asmbdata[f"VARIABLE_{var}"])
 
@@ -651,7 +652,7 @@ class AST:
         var_id_num, var_type = self.get_var_from_scope(
             operand["assignee"]["field_access"]["id"], scope_array
         )
-
+        #self.asm += codegen.generatecomm(f'assign to var num {var_id_num}')
         expr_type = "Assign"
         assignee_type = var_type
         var_scope_type = "Variable"
@@ -757,9 +758,12 @@ class AST:
         else:
             output += expression
 
-        reg = self.asmbstack.pop(0)
+        if len(self.asmbstack) == 0: self.asmbstack.insert(0,self.asmbregs.pop(0))
+        reg = self.asmbstack.pop(0) if var_id_num not in allregs else allregs[var_id_num]
+        #self.asm+=codegen.generatecomm(f'{var_id_num} is reg {reg}')
         Err = False
         if "field_" in var_type:
+            if len(self.asmbstack) == 0: self.asmbstack.insert(0,self.asmbregs.pop(0))
             assignee_reg = self.asmbstack.pop(0)
             self.asm += codegen.generatemove(assignee_reg, reg)
         else:
@@ -768,6 +772,7 @@ class AST:
                 self.asm += codegen.generatehstore(reg, assignee_reg)
             except:
                 try:
+                    if len(self.asmbstack) == 0: self.asmbstack.insert(0,self.asmbregs.pop(0))
                     assignee_reg = self.asmbstack.pop(0)
                     self.asm += codegen.generatemove(assignee_reg, reg)
                 except:
@@ -775,7 +780,7 @@ class AST:
                     pass
 
         if not Err:
-            self.asmbregs.insert(0, reg)
+            #self.asmbregs.insert(0, reg)
             self.asmbstack.insert(0, assignee_reg)
         else:
             self.asmbstack.insert(0, reg)
@@ -860,7 +865,7 @@ class AST:
             asmout, reg = codegen.generateauto(ast_auto,reg,stmt_type,self.asmbregs)
             self.asm += asmout
             self.asm += codegen.generatehstore(reg,field_reg)
-            self.asmbregs.insert(0,reg)
+            #self.asmbregs.insert(0,reg)
             self.asmbstack.append(field_reg)
         else:
             reg = self.asmbstack.pop(0)
@@ -1077,12 +1082,20 @@ class AST:
             r_reg = self.asmbstack.pop(0)
         except:
             rvarid = binary_expression['right']['expression']['field_access']['id']
-            r_reg = allregs[rvarid]
+            try:
+                r_reg = allregs[rvarid]
+            except:
+                allregs[rvarid] = self.asmbregs.pop(0)
+                r_reg = allregs[rvarid]
         try:
             l_reg = self.asmbstack.pop(0)
         except:
             lvarid = binary_expression['left']['expression']['field_access']['id']
-            l_reg = allregs[lvarid]
+            try:
+                l_reg = allregs[lvarid]
+            except:
+                allregs[lvarid] = self.asmbregs.pop(0)
+                l_reg = allregs[lvarid]
 
         operator_to_string = {
             "+": "add",
